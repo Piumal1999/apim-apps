@@ -17,6 +17,7 @@
  */
 
 import React, { useState, FC, useContext, useEffect } from 'react';
+import Editor from '@monaco-editor/react';
 import { styled } from '@mui/material/styles';
 import {
     Grid,
@@ -32,6 +33,7 @@ import {
     FormControl,
     FormHelperText,
     MenuItem,
+    Paper,
 } from '@mui/material';
 import { FormattedMessage, useIntl } from 'react-intl';
 import { Progress } from 'AppComponents/Shared';
@@ -78,6 +80,15 @@ const StyledBox = styled(Box)((
     [`& .${classes.formControl}`]: {
         width: '80%',
     }
+}));
+
+const EditorContainer = styled(Box)(({ theme }) => ({
+    height: 400,
+    '& .monaco-editor': {
+        borderBottomLeftRadius: theme.shape.borderRadius,
+        borderBottomRightRadius: theme.shape.borderRadius,
+        overflow: 'hidden',
+    },
 }));
 
 interface GeneralProps {
@@ -130,7 +141,7 @@ const General: FC<GeneralProps> = ({
         return <Progress />
     }
 
-    const onInputChange = (event: any, specType: string) => {
+    const onInputChange = (event: any, specType: string, specName?: string) => {
         if (specType.toLowerCase() === 'boolean') {
             setState({ ...state, [event.target.name]: event.target.checked });
         } else if (
@@ -139,6 +150,8 @@ const General: FC<GeneralProps> = ({
             || specType.toLowerCase() === 'enum'
         ) {
             setState({ ...state, [event.target.name]: event.target.value });
+        } else if (specType.toLowerCase() === 'json') {
+            specName && setState({ ...state, [specName]: `"${event}"` });
         }
     }
 
@@ -231,6 +244,7 @@ const General: FC<GeneralProps> = ({
         } else if (previousVal !== null && previousVal !== undefined) {
             if (spec.type.toLowerCase() === 'integer') return parseInt(previousVal, 10);
             else if (spec.type.toLowerCase() === 'boolean') return (previousVal.toString() === 'true');
+            else if (spec.type.toLowerCase() === 'password') return '********'
             else return previousVal;
         } else if (spec.defaultValue !== null && spec.defaultValue !== undefined) {
             if (spec.type.toLowerCase() === 'integer') return parseInt(spec.defaultValue, 10);
@@ -311,7 +325,7 @@ const General: FC<GeneralProps> = ({
     }
 
     const hasAttributes = policySpec.policyAttributes.length !== 0;
-    const resetDisabled = Object.values(state).filter((value: any) => 
+    const resetDisabled = Object.values(state).filter((value: any) =>
         (value !== null && (value.toString() !== 'true' || value.toString() !== 'false')) || !!value
     ).length === 0;
 
@@ -356,7 +370,7 @@ const General: FC<GeneralProps> = ({
                                         }
                                         defaultMessage='Oops! Looks like this policy does not have a description'
                                     />
-                                )}                            
+                                )}
                             </Typography>
                         </div>
                     </Grid>
@@ -468,6 +482,75 @@ const General: FC<GeneralProps> = ({
                                             )}
                                         </>
                                     )}
+                                />
+                            )}
+
+                            {/* When attribute type is json */}
+                            {spec.type.toLowerCase() === 'json' && (
+                                <FormControl
+                                variant='outlined'
+                                className={classes.formControl}
+                                error={getError(spec) !== ''}
+                                style={{ width: '100%' }}
+                            >
+                                {/* Custom Label */}
+                                <InputLabel shrink htmlFor={spec.name} style={{ marginBottom: '0.5rem' }}>
+                                    <>
+                                        {spec.displayName}
+                                        {spec.required && (
+                                            <sup className={classes.mandatoryStar}>*</sup>
+                                        )}
+                                    </>
+                                </InputLabel>
+                            
+                                {/* Monaco Editor */}
+                                <Box component='div' m={1}>
+                                    <Paper variant='outlined'>
+                                        <EditorContainer>
+                                            <Editor
+                                                height='100%'
+                                                defaultLanguage='json'
+                                                value={getValue(spec)}
+                                                onChange={(value) => onInputChange(value, spec.type, spec.name)}
+                                                theme='light'
+                                                options={{
+                                                    minimap: { enabled: false },
+                                                    lineNumbers: 'on',
+                                                    scrollBeyondLastLine: false,
+                                                    lineNumbersMinChars: 2,
+                                                }}
+                                            />
+                                        </EditorContainer>
+                                    </Paper>
+                                </Box>
+                            
+                                {/* Helper or Error text */}
+                                <FormHelperText>
+                                    {getError(spec) === '' ? spec.description : getError(spec)}
+                                </FormHelperText>
+                            </FormControl>
+                            )}
+
+                            {/* When attribute type is password */}
+                            {(spec.type.toLowerCase() === 'password') && (
+                                <TextField
+                                    id={spec.name}
+                                    label={(
+                                        <>
+                                            {spec.displayName}
+                                            {spec.required && (
+                                                <sup className={classes.mandatoryStar}>*</sup>
+                                            )}
+                                        </>
+                                    )}
+                                    helperText={getError(spec) === '' ? spec.description : getError(spec)}
+                                    error={getError(spec) !== ''}
+                                    variant='outlined'
+                                    name={spec.name}
+                                    type='text'
+                                    value={getValue(spec)}
+                                    onChange={(e: any) => onInputChange(e, spec.type)}
+                                    fullWidth
                                 />
                             )}
                         </Grid>
