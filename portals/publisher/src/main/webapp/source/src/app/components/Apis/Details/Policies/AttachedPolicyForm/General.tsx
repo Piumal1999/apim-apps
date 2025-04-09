@@ -231,6 +231,7 @@ const General: FC<GeneralProps> = ({
         } else if (previousVal !== null && previousVal !== undefined) {
             if (spec.type.toLowerCase() === 'integer') return parseInt(previousVal, 10);
             else if (spec.type.toLowerCase() === 'boolean') return (previousVal.toString() === 'true');
+            else if (spec.type.toLowerCase() === 'password') return '********';
             else return previousVal;
         } else if (spec.defaultValue !== null && spec.defaultValue !== undefined) {
             if (spec.type.toLowerCase() === 'integer') return parseInt(spec.defaultValue, 10);
@@ -468,6 +469,29 @@ const General: FC<GeneralProps> = ({
                                             )}
                                         </>
                                     )}
+                                />
+                            )}
+
+                            {/* When attribute type is password */}
+                            {(spec.type.toLowerCase() === 'password') && (
+                                <TextField
+                                    id={spec.name}
+                                    label={(
+                                        <>
+                                            {spec.displayName}
+                                            {spec.required && (
+                                                <sup className={classes.mandatoryStar}>*</sup>
+                                            )}
+                                        </>
+                                    )}
+                                    helperText={getError(spec) === '' ? spec.description : getError(spec)}
+                                    error={getError(spec) !== ''}
+                                    variant='outlined'
+                                    name={spec.name}
+                                    type='text'
+                                    value={getValue(spec)}
+                                    onChange={(e: any) => onInputChange(e, spec.type)}
+                                    fullWidth
                                 />
                             )}
                         </Grid>
