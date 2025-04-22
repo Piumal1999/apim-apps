@@ -151,7 +151,7 @@ const General: FC<GeneralProps> = ({
         ) {
             setState({ ...state, [event.target.name]: event.target.value });
         } else if (specType.toLowerCase() === 'json') {
-            specName && setState({ ...state, [specName]: `"${event}"` });
+            specName && setState({ ...state, [specName]: event });
         }
     }
 
@@ -179,6 +179,14 @@ const General: FC<GeneralProps> = ({
             } else {
                 updateCandidates[key] = value;
             }
+            // Wrap json type with `""`
+            if (attributeSpec && attributeSpec.type.toLowerCase() === 'json') 
+                try {
+                    const parsedJson = JSON.parse(updateCandidates[key]);
+                    updateCandidates[key] = JSON.stringify(parsedJson).replace(/"/g, "'");
+                } catch (e) {
+                    console.error(e);
+                }
         });
 
         if (policyObj.name === 'modelRoundRobin' || policyObj.name === 'modelWeightedRoundRobin' || policyObj.name === 'modelFailover') {
@@ -244,7 +252,15 @@ const General: FC<GeneralProps> = ({
         } else if (previousVal !== null && previousVal !== undefined) {
             if (spec.type.toLowerCase() === 'integer') return parseInt(previousVal, 10);
             else if (spec.type.toLowerCase() === 'boolean') return (previousVal.toString() === 'true');
-            else if (spec.type.toLowerCase() === 'password') return '********'
+            else if (spec.type.toLowerCase() === 'json') {
+                try {
+                    const jsonString = previousVal.replace(/'/g, '"');
+                    const jsonObject = JSON.parse(jsonString);
+                    return JSON.stringify(jsonObject, null, 2);
+                } catch (e) {
+                    console.error(e);
+                }
+            }
             else return previousVal;
         } else if (spec.defaultValue !== null && spec.defaultValue !== undefined) {
             if (spec.type.toLowerCase() === 'integer') return parseInt(spec.defaultValue, 10);
@@ -517,6 +533,7 @@ const General: FC<GeneralProps> = ({
                                                     minimap: { enabled: false },
                                                     lineNumbers: 'on',
                                                     scrollBeyondLastLine: false,
+                                                    tabSize: 2,
                                                     lineNumbersMinChars: 2,
                                                 }}
                                             />
